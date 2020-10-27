@@ -4,6 +4,7 @@ from pathlib import Path
 import open3d as o3d
 import os
 import time
+import matplotlib.pyplot as plt
 
 def cam_to_velo_frame(velo_points):
     R = np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
@@ -11,8 +12,11 @@ def cam_to_velo_frame(velo_points):
 
 class TrackingVisualizer(object):
 
-    def __init__(self, results_path, pointcloud_path, fps=60):
-        self.tracking_results = TrackerResults.load(Path(results_path))
+    def __init__(self, results_path, pointcloud_path, fps=60, load_detections=False):
+        if not load_detections:
+            self.tracking_results = TrackerResults.load(Path(results_path))
+        else:
+            self.tracking_results = TrackerResults.load_from_detections(Path(results_path))
         self.pointcloud_path = Path(pointcloud_path)
         self.vis = o3d.visualization.Visualizer()
         self.vis.create_window()
@@ -34,6 +38,11 @@ class TrackingVisualizer(object):
         vc = self.vis.get_view_control()
         vc.set_up(np.array([0, -1, 0]))
         vc.set_front(np.array([0, 0, -1]))
+
+
+        # For making scatter plot of bounding box ranges
+        self.box_ranges = []
+        self.box_time_steps = []
 
 
     def visualize_all(self):
@@ -70,6 +79,14 @@ class TrackingVisualizer(object):
             self.vis.add_geometry(bbox, reset_bounding_box=False)
         self.prev_bboxes = bboxes
 
+        self.box_ranges += [bbox.z for bbox in self.tracking_results[frame]]
+        self.box_time_steps += [frame for _ in self.tracking_results[frame]]
+
+    def plot_ranges(self):
+        plt.plot(self.box_time_steps, self.box_ranges, '.')
+        plt.xlabel("Time step")
+        plt.ylabel("Bounding box range")
+        plt.show()
 
 
     def update_vis(self):
