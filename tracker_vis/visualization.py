@@ -15,7 +15,7 @@ def cam_to_velo_frame(velo_points):
 
 class TrackingVisualizer(object):
 
-    def __init__(self, results_path, pointcloud_path, image_path, fps=60, load_detections=False, n_skip=1, show_images=False):
+    def __init__(self, results_path, pointcloud_path, image_path, fps=60, load_detections=False, n_skip=1):
         if not load_detections:
             self.tracking_results = TrackerResults.load(Path(results_path))
         else:
@@ -25,7 +25,7 @@ class TrackingVisualizer(object):
         self.vis.create_window(height=720, width=960)
         self.pcd = o3d.geometry.PointCloud()
 
-        self.show_images = show_images
+        self.show_images = image_path is not None
         if self.show_images:
             self.image_path = Path(image_path)
             self.images = imread_collection(str(image_path / "*.png"), conserve_memory=False)
