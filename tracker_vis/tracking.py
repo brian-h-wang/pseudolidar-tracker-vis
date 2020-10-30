@@ -114,9 +114,10 @@ class TrackerBoundingBox(object):
 
 class TrackerResults(object):
 
-    def __init__(self):
+    def __init__(self, box_color=None):
         self._results = {}
         self.colors = {}
+        self.box_color = box_color
 
     def __getitem__(self, time_step):
         if time_step not in self._results.keys():
@@ -128,8 +129,11 @@ class TrackerResults(object):
         assert type(time_step) == int, "Must give an int time step as input"
         assert type(tracker_bbox) == TrackerBoundingBox, "TrackerResults.add takes in a TrackerBoundingBox input"
         if tracker_bbox.track_id not in self.colors.keys():
-            new_color = list(np.random.random(3) * 0.7 + 0.2)
-            self.colors[tracker_bbox.track_id] = new_color
+            if self.box_color is None:
+                new_color = list(np.random.random(3) * 0.7 + 0.2)
+                self.colors[tracker_bbox.track_id] = new_color
+            else:
+                self.colors[tracker_bbox.track_id] = self.box_color
         tracker_bbox.color = self.colors[tracker_bbox.track_id]
         self._results[time_step] = self[time_step] + [tracker_bbox]
 
@@ -138,7 +142,7 @@ class TrackerResults(object):
         return np.max(list(self._results.keys()))
 
     @staticmethod
-    def load(data_path):
+    def load(data_path, box_color=None):
         """
         Loads a tracking results file and creates a TrackingResults object,
         which can be used for accessing the tracker data.
@@ -176,7 +180,7 @@ class TrackerResults(object):
         -------
 
         """
-        results = TrackerResults()
+        results = TrackerResults(box_color=box_color)
         with open(data_path, 'r') as data_file:
             lines = [l.rstrip() for l in data_file.readlines()]
         for line in lines:

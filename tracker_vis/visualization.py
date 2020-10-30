@@ -9,13 +9,15 @@ from skimage.viewer import ImageViewer
 from skimage.io import imread, imshow, imread_collection
 import matplotlib.pyplot as plt
 
+GT_BOX_COLOR = [0.4, 0.95, 0.3] # bright green
+
 def cam_to_velo_frame(velo_points):
     R = np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
     return R.dot(velo_points)
 
 class TrackingVisualizer(object):
 
-    def __init__(self, results_path, pointcloud_path, image_path, fps=60, load_detections=False, n_skip=1):
+    def __init__(self, results_path, pointcloud_path, image_path, fps=60, load_detections=False, n_skip=1, gt_path=None):
         if not load_detections:
             self.tracking_results = TrackerResults.load(Path(results_path))
         else:
@@ -31,6 +33,10 @@ class TrackingVisualizer(object):
             self.images = imread_collection(str(image_path / "*.png"), conserve_memory=False)
             self.image_vis = o3d.visualization.Visualizer()
             self.image_vis.create_window(height=720, width=720, left=1024)
+        if gt_path is not None:
+            self.ground_truth = TrackerResults.load(Path(gt_path), box_color=GT_BOX_COLOR)
+        else:
+            self.ground_truth = None
 
         # self.viewer = ImageViewer(self.images[0])
         # self.viewer.show()
@@ -78,7 +84,8 @@ class TrackingVisualizer(object):
         while True:
             t = time.time()
             if t - t_prev_frame >= (1.0 / self.fps):
-                print("\r[Frame %d]" % (frame), end='')
+                # print("\r[Frame %d]" % (frame), end='')
+                print("[Frame %d]" % (frame))
                 self.visualize_frame(frame)
                 frame += self.n_skip
                 if frame >= n_frames:
@@ -102,6 +109,8 @@ class TrackingVisualizer(object):
         colors = np.ones(points.shape) * 0.5
 
         bboxes = [bbox.to_o3d() for bbox in self.tracking_results[frame]]
+        if self.ground_truth is not None:
+            bboxes += [bbox.to_o3d() for bbox in self.ground_truth[frame]]
 
         for prev_bbox in self.prev_bboxes:
             self.vis.remove_geometry(prev_bbox, reset_bounding_box=False)
