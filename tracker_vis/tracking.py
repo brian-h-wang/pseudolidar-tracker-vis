@@ -80,7 +80,7 @@ class TrackerBoundingBox(object):
         float
             Distance between the box centers
         """
-        return np.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+        return np.sqrt((self.x - other.x)**2 + (self.z - other.z)**2)
 
     @staticmethod
     def from_kitti_detection(kitti_str):
@@ -111,21 +111,34 @@ class TrackerBoundingBox(object):
         rotation_y = float(split[14])
         return TrackerBoundingBox(x=x, y=y, z=z, h=h, w=w, l=l, rotation_y=rotation_y, track_id=0)
 
-    def to_o3d(self):
-        points = np.zeros((8,3))
-        i = 0
+    def to_o3d(self, cylinder=False):
+        if not cylinder:
+            points = np.zeros((8,3))
+            i = 0
 
-        size = self.size # ignore length, height
-        # Note: x, y, z are in camera coords
-        for dx in [-size/2., size/2.]:
-            for dy in [0, -HEIGHT]:
-                for dz in [-size/2., size/2]:
-                    points[i,:] = [self.x + dx, self.y + dy, self.z + dz]
-                    i += 1
+            size = self.size # ignore length, height
+            # Note: x, y, z are in camera coords
+            for dx in [-size/2., size/2.]:
+                for dy in [0, -HEIGHT]:
+                    for dz in [-size/2., size/2]:
+                        points[i,:] = [self.x + dx, self.y + dy, self.z + dz]
+                        i += 1
 
-        points_v3d = o3d.utility.Vector3dVector(points)
-        bbox_o3d = o3d.geometry.AxisAlignedBoundingBox.create_from_points(points_v3d)
-        bbox_o3d.color = self.color
+            points_v3d = o3d.utility.Vector3dVector(points)
+            bbox_o3d = o3d.geometry.AxisAlignedBoundingBox.create_from_points(points_v3d)
+            bbox_o3d.color = self.color
+            bbox_o3d
+
+        else:
+            bbox_o3d: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_cylinder(radius=self.size/2, height=HEIGHT)
+            R = np.zeros((3,3))
+            R[0,0] = 1
+            R[1,2] = 1
+            R[2,1] = 1
+            bbox_o3d.rotate(R, [0, 0, 0])
+            bbox_o3d.translate([self.x, self.y-HEIGHT/2, self.z])
+            bbox_o3d.paint_uniform_color(self.color)
+
         return bbox_o3d
 
     def __str__(self):

@@ -2,13 +2,13 @@ import numpy as np
 from tracker_vis.tracking import TrackerResults, TrackerBoundingBox
 from scipy.optimize import linear_sum_assignment
 
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# sns.set()
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
 
 class DetectionsHistogram(object):
 
-    def __init__(self, detections, ground_truth, hist_bin_size=1.0, hist_range_max=15.0, assoc_threshold=3.0):
+    def __init__(self, detections, ground_truth, hist_bin_size=1.0, hist_range_max=15.0, assoc_threshold=3.0, max_frame=2000):
         """
         Parameters
         ----------
@@ -39,7 +39,7 @@ class DetectionsHistogram(object):
         false_positives_count = np.zeros(n_bins, dtype=int)
         false_negatives_count = np.zeros(n_bins, dtype=int)
 
-        for frame in range(ground_truth.n_frames):
+        for frame in range(min(ground_truth.n_frames, max_frame)):
             # Filter out any detections or gt boxes that are outside the maximum range for the histogram
             detection_boxes = [d for d in detections[frame] if get_bin_index(d, hist_bin_size) < n_bins]
             gt_boxes = [g for g in ground_truth[frame] if get_bin_index(g, hist_bin_size) < n_bins]
@@ -116,7 +116,59 @@ class DetectionsHistogram(object):
         self.false_negatives_count = false_negatives_count
 
         self.n_bins = n_bins
+        self.bin_ranges = np.arange(n_bins) * hist_bin_size
+        self.bin_size = hist_bin_size
+        self.bin_max_range = hist_range_max
 
+    def plot_means_stddevs(self, max_range=None):
+        """
+        Plot the means and std deviations of X, Y, and size,
+        among the detections matched to a GT instance.
+
+        Parameters
+        ----------
+        max_range
+
+        """
+        if max_range is None:
+            max_range = self.bin_max_range
+        means = [self.x_means, self.z_means, self.size_means]
+        stddevs = [self.x_stddevs, self.z_stddevs, self.size_stddevs]
+
+        labels = ["X-position", "Y-position", "Tree size"]
+
+        # axs: plt.Axes
+        # fig, axs = plt.subplots(3,2)
+        fig, axs = plt.subplots(1,2)
+
+        # iterate over X, Z, size
+        bins = [b for b in self.bin_ranges if b < max_range]
+        n_bins = len(bins)
+
+        rects_m = []
+        rects_s = []
+        for i in range(3):
+            m = means[i][0:n_bins]
+            s = stddevs[i][0:n_bins]
+
+            rects_m.append[ax[0].bar(bins, m, width, label=labels[i])]
+            rects_s.append[ax[0].bar(bins, m, width, label=labels[i])]
+            ax[0].set_xlabel("Range from camera [m]")
+            ax[0].set_ylabel("Mean absolute error [m]")
+
+            ax[1].set_xlabel("Range from camera [m]")
+            ax[1].set_ylabel("Std. dev. of error [m]")
+            # create Axes for mean and stddev subplots
+            # ax_m: plt.Axes = axs[i,0]
+            # ax_s: plt.Axes = axs[i,1]
+
+            # ax_m.bar(bins, m)
+            # ax_m.set_xlabel("Range from camera [m]")
+            # ax_m.set_ylabel("Mean absolute error [m]")
+
+            # ax_s.bar(bins, s)
+            # ax_s.set_xlabel("Range from camera [m]")
+        plt.show()
 
 def get_bin_index(bbox, hist_bin_size):
     r = bbox.range
