@@ -1,6 +1,9 @@
 import numpy as np
 import open3d as o3d
 import os
+from pathlib import Path
+
+HEIGHT=3
 
 class TrackerBoundingBox(object):
     """
@@ -60,6 +63,25 @@ class TrackerBoundingBox(object):
         rotation_y = float(split[5])
         return frame, TrackerBoundingBox(x=x, y=y, z=z, h=h, w=w, l=l, rotation_y=rotation_y, track_id=track_id)
 
+    @property
+    def range(self):
+        return np.sqrt(self.z**2 + self.x**2)
+
+    def distance(self, other):
+        """
+        Computes the distance between the center of this box and another box
+
+        Parameters
+        ----------
+        other: TrackerBoundingBox
+
+        Returns
+        -------
+        float
+            Distance between the box centers
+        """
+        return np.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+
     @staticmethod
     def from_kitti_detection(kitti_str):
         """
@@ -92,10 +114,12 @@ class TrackerBoundingBox(object):
     def to_o3d(self):
         points = np.zeros((8,3))
         i = 0
+
+        size = self.size # ignore length, height
         # Note: x, y, z are in camera coords
-        for dx in [-self.width/2., self.width/2.]:
-            for dy in [0, -self.height]:
-                for dz in [-self.length/2., self.length/2]:
+        for dx in [-size/2., size/2.]:
+            for dy in [0, -HEIGHT]:
+                for dz in [-size/2., size/2]:
                     points[i,:] = [self.x + dx, self.y + dy, self.z + dz]
                     i += 1
 
@@ -110,6 +134,10 @@ class TrackerBoundingBox(object):
                "Position (x,y,z): [%.3f, %.3f, %.3f]\n" \
                "Dimensions (h,w,l): [%.3f, %.3f, %.3f]\n" \
                "--------------------------------------" % (self.track_id, self.x, self.y, self.z, self.height, self.width, self.length)
+
+    @property
+    def size(self):
+        return self.width
 
 
 class TrackerResults(object):
@@ -225,6 +253,7 @@ class TrackerResults(object):
         -------
 
         """
+        detections_path = Path(detections_path)
         results = TrackerResults()
         for filename in os.listdir(detections_path):
             frame = int(filename.split('.')[0])
@@ -235,5 +264,4 @@ class TrackerResults(object):
                 results.add(frame, bbox)
 
         return results
-
 

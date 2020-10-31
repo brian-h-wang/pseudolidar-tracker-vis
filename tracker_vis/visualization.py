@@ -112,6 +112,8 @@ class TrackingVisualizer(object):
         if self.ground_truth is not None:
             bboxes += [bbox.to_o3d() for bbox in self.ground_truth[frame]]
 
+        # bboxes = [bbox for bbox in bboxes if bbox.get_center()[2] < 6]
+
         for prev_bbox in self.prev_bboxes:
             self.vis.remove_geometry(prev_bbox, reset_bounding_box=False)
         for bbox in bboxes:
@@ -120,7 +122,7 @@ class TrackingVisualizer(object):
             colors[in_box,:] = bbox.color
         self.prev_bboxes = bboxes
 
-        self.box_ranges += [bbox.z for bbox in self.tracking_results[frame]]
+        self.box_ranges += [bbox.range for bbox in self.tracking_results[frame]]
         self.box_time_steps += [frame for _ in self.tracking_results[frame]]
 
         # self.pcd.colors = o3d.utility.Vector3dVector(colors)
