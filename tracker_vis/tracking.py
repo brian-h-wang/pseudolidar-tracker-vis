@@ -217,7 +217,7 @@ class TrackerResults(object):
         return results
 
     @staticmethod
-    def load_from_detections(detections_path):
+    def load_from_detections(detections_path, box_color=None):
         """
         Loads a tracking results file and creates a TrackingResults object,
         which can be used for accessing the tracker data.
@@ -254,7 +254,7 @@ class TrackerResults(object):
 
         """
         detections_path = Path(detections_path)
-        results = TrackerResults()
+        results = TrackerResults(box_color=box_color)
         for filename in os.listdir(detections_path):
             frame = int(filename.split('.')[0])
             with open(detections_path / filename, 'r') as detections_file:

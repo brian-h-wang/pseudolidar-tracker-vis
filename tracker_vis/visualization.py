@@ -10,6 +10,7 @@ from skimage.io import imread, imshow, imread_collection
 import matplotlib.pyplot as plt
 
 GT_BOX_COLOR = [0.4, 0.95, 0.3] # bright green
+DET_COLOR = [0.95, 0.3, 0.3] # bright red
 
 def cam_to_velo_frame(velo_points):
     R = np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
@@ -17,11 +18,15 @@ def cam_to_velo_frame(velo_points):
 
 class TrackingVisualizer(object):
 
-    def __init__(self, results_path, pointcloud_path, image_path, fps=60, load_detections=False, n_skip=1, gt_path=None):
-        if not load_detections:
+    def __init__(self, pointcloud_path, results_path=None, gt_path=None, detections_path=None, image_path=None,
+                 fps=60,  n_skip=1):
+        self.tracking_results = self.detections = self.ground_truth = None
+        if results_path is not None:
             self.tracking_results = TrackerResults.load(Path(results_path))
-        else:
-            self.tracking_results = TrackerResults.load_from_detections(Path(results_path))
+        if detections_path is not None:
+            self.detections = TrackerResults.load_from_detections(Path(detections_path), box_color=DET_COLOR)
+        if gt_path is not None:
+            self.ground_truth = TrackerResults.load(Path(gt_path), box_color=GT_BOX_COLOR)
         self.pointcloud_path = Path(pointcloud_path)
         self.vis = o3d.visualization.Visualizer()
         self.vis.create_window(height=720, width=960)
@@ -30,13 +35,9 @@ class TrackingVisualizer(object):
         self.show_images = image_path is not None
         if self.show_images:
             self.image_path = Path(image_path)
-            self.images = imread_collection(str(image_path / "*.png"), conserve_memory=False)
+            self.images = imread_collection(str(self.image_path / "*.png"), conserve_memory=False)
             self.image_vis = o3d.visualization.Visualizer()
             self.image_vis.create_window(height=720, width=720, left=1024)
-        if gt_path is not None:
-            self.ground_truth = TrackerResults.load(Path(gt_path), box_color=GT_BOX_COLOR)
-        else:
-            self.ground_truth = None
 
         # self.viewer = ImageViewer(self.images[0])
         # self.viewer.show()
@@ -78,7 +79,12 @@ class TrackingVisualizer(object):
 
     def visualize_all(self):
         t_prev_frame = time.time()
-        n_frames = self.tracking_results.n_frames
+        if self.tracking_results:
+            n_frames = self.tracking_results.n_frames
+        elif self.ground_truth:
+            n_frames = self.ground_truth.n_frames
+        elif self.detections:
+            n_frames = self.detections.n_frames
         frame = 0
 
         while True:
@@ -108,22 +114,27 @@ class TrackingVisualizer(object):
         self.pcd.points = o3d.utility.Vector3dVector(points)
         colors = np.ones(points.shape) * 0.5
 
-        bboxes = [bbox.to_o3d() for bbox in self.tracking_results[frame]]
+        bboxes = []
+        if self.tracking_results is not None:
+            bboxes += self.tracking_results[frame]
         if self.ground_truth is not None:
-            bboxes += [bbox.to_o3d() for bbox in self.ground_truth[frame]]
+            bboxes += self.ground_truth[frame]
+        if self.detections is not None:
+            bboxes += self.detections[frame]
 
-        # bboxes = [bbox for bbox in bboxes if bbox.get_center()[2] < 6]
+        bboxes_o3d = [bbox.to_o3d() for bbox in bboxes]
 
         for prev_bbox in self.prev_bboxes:
             self.vis.remove_geometry(prev_bbox, reset_bounding_box=False)
-        for bbox in bboxes:
+        for bbox in bboxes_o3d:
             self.vis.add_geometry(bbox, reset_bounding_box=False)
-            in_box = bbox.get_point_indices_within_bounding_box(self.pcd.points)
-            colors[in_box,:] = bbox.color
-        self.prev_bboxes = bboxes
+            # in_box = bbox.get_point_indices_within_bounding_box(self.pcd.points)
+            # colors[in_box,:] = bbox.color
+        self.prev_bboxes = bboxes_o3d
 
-        self.box_ranges += [bbox.range for bbox in self.tracking_results[frame]]
-        self.box_time_steps += [frame for _ in self.tracking_results[frame]]
+        if self.tracking_results is not None:
+            self.box_ranges += [bbox.range for bbox in self.tracking_results[frame]]
+            self.box_time_steps += [frame for _ in self.tracking_results[frame]]
 
         # self.pcd.colors = o3d.utility.Vector3dVector(colors)
 
