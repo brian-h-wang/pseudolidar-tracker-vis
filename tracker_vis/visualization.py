@@ -242,6 +242,14 @@ class LineMesh(object):
         self.create_line_mesh()
 
     @staticmethod
+    def create_from_bounding_box(bbox):
+        points = np.asarray(bbox.get_box_points())
+        color = bbox.color
+        # l = [[0,1],[0,2],[0,3],[3,6],[1,6],[3,5],[2,5],[4,5],[4,6],[1,7],[2,7],[4,7]]
+        l = [[0, 1], [0, 2], [0, 3], [1, 7], [1, 6], [3, 6], [3, 5], [2, 5], [4, 5], [4, 7], [2, 7], [4, 6]]
+        return LineMesh(points, colors=color, lines=l, radius=0.03)
+
+    @staticmethod
     def lines_from_ordered_points(points):
         lines = [[i, i + 1] for i in range(0, points.shape[0] - 1, 1)]
         return np.array(lines)
