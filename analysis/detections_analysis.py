@@ -8,7 +8,7 @@ sns.set()
 
 class DetectionsHistogram(object):
 
-    def __init__(self, detections, ground_truth, hist_bin_size=1.0, hist_range_max=15.0, assoc_threshold=3.0, max_frame=2000):
+    def __init__(self, detections, ground_truth, hist_bin_size=1.0, hist_range_max=15.0, assoc_threshold=1.0, max_frame=2000):
         """
         Parameters
         ----------
@@ -120,59 +120,224 @@ class DetectionsHistogram(object):
         self.bin_size = hist_bin_size
         self.bin_max_range = hist_range_max
 
-    def plot_means_stddevs(self, max_range=None):
-        """
-        Plot the means and std deviations of X, Y, and size,
-        among the detections matched to a GT instance.
+def plot_means_stddevs(det_hist, trk_hist=None, max_range=None, width=0.6):
+    """
+    Plot the means and std deviations of X, Y, and size,
+    among the detections matched to a GT instance.
 
-        Parameters
-        ----------
-        max_range
+    Parameters
+    ----------
+    det_hist: DetectionsHistogram
+    trk_hist: DetectionsHistogram
+    max_range
 
-        """
-        if max_range is None:
-            max_range = self.bin_max_range
-        means = [self.x_means, self.z_means, self.size_means]
-        stddevs = [self.x_stddevs, self.z_stddevs, self.size_stddevs]
+    """
+    # Determine which bins to plot based on the max range
+    if max_range is None:
+        max_range = det_hist.bin_max_range
+    bins = [b for b in det_hist.bin_ranges if b < max_range]
+    n_bins = len(bins)
 
-        labels = ["X-position", "Y-position", "Tree size"]
+    plt.rcParams["axes.titleweight"] = "bold"
 
-        # axs: plt.Axes
-        # fig, axs = plt.subplots(3,2)
-        fig, axs = plt.subplots(1,2)
+    # Plot means
+    fig, axs = plt.subplots(3,2)
+    fig.tight_layout()
+    # ax_mean_x: plt.Axes = axs[0,0]
+    # ax_mean_z: plt.Axes = plt.subplot(3,2,3)
+    # ax_mean_size: plt.Axes = plt.subplot(3,2,5)
+    # ax_std_x: plt.Axes = plt.subplot(3,2,2)
+    # ax_std_z : plt.Axes= plt.subplot(3,2,4)
+    # ax_std_size : plt.Axes= plt.subplot(3,2,6)
+    ax_mean_x: plt.Axes = axs[0,0]
+    ax_mean_z: plt.Axes = axs[1,0]
+    ax_mean_size: plt.Axes = axs[2,0]
+    ax_std_x: plt.Axes = axs[0,1]
+    ax_std_z : plt.Axes= axs[1,1]
+    ax_std_size : plt.Axes= axs[2,1]
 
-        # iterate over X, Z, size
-        bins = [b for b in self.bin_ranges if b < max_range]
-        n_bins = len(bins)
+    ax_all = [ax_mean_x, ax_mean_z, ax_mean_size, ax_std_x, ax_std_z, ax_std_size]
+    for ax in ax_all:
+        ax.set_xlabel("Range from camera [m]")
+        ax.set_xticks(bins)
+    for ax in [ax_mean_x, ax_mean_z, ax_mean_size]:
+        ax.set_ylabel("Mean absolute error [m]")
+    for ax in [ax_std_x, ax_std_z, ax_std_size]:
+        ax.set_ylabel("Std. dev. of error [m]")
 
-        rects_m = []
-        rects_s = []
-        for i in range(3):
-            m = means[i][0:n_bins]
-            s = stddevs[i][0:n_bins]
+    # bins for detections and trk
+    bins = np.array(bins)
+    if trk_hist is None:
+        b_det = bins
+        b_trk = bins
+    else:
+        width = width/2.
+        b_det = bins - width/2
+        b_trk = bins + width/2
 
-            rects_m.append[ax[0].bar(bins, m, width, label=labels[i])]
-            rects_s.append[ax[0].bar(bins, m, width, label=labels[i])]
-            ax[0].set_xlabel("Range from camera [m]")
-            ax[0].set_ylabel("Mean absolute error [m]")
+    ax_mean_x.bar(b_det, det_hist.x_means[:n_bins], width=width, label="Raw detections")
+    if not trk_hist is None:
+        ax_mean_x.bar(b_trk, trk_hist.x_means[:n_bins], width=width, label="Tracker results")
+    ax_mean_x.legend(loc='upper left')
+    ax_mean_x.set_ylim([0, 0.6])
+    ax_mean_x.set_title("Mean error of x-position")
+    ax_mean_z.bar(b_det, det_hist.z_means[:n_bins], width=width, label="Raw detections")
+    if not trk_hist is None:
+        ax_mean_z.bar(b_trk, trk_hist.z_means[:n_bins], width=width, label="Tracker results")
+    ax_mean_z.legend(loc='upper left')
+    ax_mean_z.set_title("Mean error of y-position")
+    ax_mean_z.set_ylim([0, 0.6])
+    ax_mean_size.bar(b_det, det_hist.size_means[:n_bins], width=width, label="Raw detections")
+    if not trk_hist is None:
+        ax_mean_size.bar(b_trk, trk_hist.size_means[:n_bins], width=width, label="Tracker results")
+    ax_mean_size.legend(loc='upper left')
+    ax_mean_size.set_title("Mean absolute error of tree size")
 
-            ax[1].set_xlabel("Range from camera [m]")
-            ax[1].set_ylabel("Std. dev. of error [m]")
-            # create Axes for mean and stddev subplots
-            # ax_m: plt.Axes = axs[i,0]
-            # ax_s: plt.Axes = axs[i,1]
+    ax_std_x.bar(b_det, det_hist.x_stddevs[:n_bins], width=width, label="Raw detections")
+    if not trk_hist is None:
+        ax_std_x.bar(b_trk, trk_hist.x_stddevs[:n_bins], width=width, label="Tracker results")
+    ax_std_x.legend(loc='upper left')
+    ax_std_x.set_ylim([0, 0.2])
+    ax_std_x.set_title("Standard deviation of x-position error")
+    ax_std_z.bar(b_det, det_hist.z_stddevs[:n_bins], width=width, label="Raw detections")
+    if not trk_hist is None:
+        ax_std_z.bar(b_trk, trk_hist.z_stddevs[:n_bins], width=width, label="Tracker results")
+    ax_std_z.legend(loc='upper left')
+    ax_std_z.set_ylim([0, 0.2])
+    ax_std_z.set_title("Standard deviation of y-position error")
+    ax_std_size.bar(b_det, det_hist.size_stddevs[:n_bins], width=width, label="Raw detections")
+    if not trk_hist is None:
+        ax_std_size.bar(b_trk, trk_hist.size_stddevs[:n_bins], width=width, label="Tracker results")
+    ax_std_size.legend(loc='upper left')
+    ax_std_size.set_ylim([0, 0.2])
+    ax_std_size.set_title("Standard deviation of tree size error")
 
-            # ax_m.bar(bins, m)
-            # ax_m.set_xlabel("Range from camera [m]")
-            # ax_m.set_ylabel("Mean absolute error [m]")
+    plt.show()
 
-            # ax_s.bar(bins, s)
-            # ax_s.set_xlabel("Range from camera [m]")
-        plt.show()
+def plot_precision_recall(det_hist, trk_hist=None, max_range=None):
+    """
+
+    Parameters
+    ----------
+    det_hist: DetectionsHistogram
+    trk_hist: DetectionsHistogram
+    max_range
+
+    """
+    # Determine which bins to plot based on the max range
+    if max_range is None:
+        max_range = det_hist.bin_max_range
+    bins = [b for b in det_hist.bin_ranges if b < max_range]
+    n_bins = len(bins)
+
+    # Plot means
+    fig, axs = plt.subplots(2,1)
+    fig.tight_layout()
+    ax_mean_p: plt.Axes = axs[0]
+    ax_mean_r: plt.Axes = axs[1]
+
+    ax_all = [ax_mean_p, ax_mean_r]
+    for ax in ax_all:
+        ax.set_xlabel("Range from camera [m]")
+        ax.set_xticks(bins)
+
+    det_p = np.zeros(n_bins)
+    for i in range(n_bins):
+        matched = det_hist.matched_detections_count[i]
+        fp = det_hist.false_positives_count[i]
+        if matched + fp == 0:
+            det_p[i] = 0
+        else:
+            det_p[i] = matched / (matched + fp)
+    det_p = det_p[0:n_bins]
+    det_r = det_hist.matched_detections_count / (det_hist.matched_detections_count + det_hist.false_negatives_count)
+    det_r = det_r[0:n_bins]
+
+    ax_mean_p.bar(bins, det_p, width=1.0, label="Raw detections")
+    ax_mean_p.legend(loc='upper left')
+    ax_mean_p.set_ylim([0, 1.0])
+    ax_mean_p.set_title("Precision of detections vs. tracker results")
+    ax_mean_p.set_ylabel("Precision")
+
+    ax_mean_r.bar(bins, det_r, width=1.0, label="Raw detections")
+    ax_mean_r.legend(loc='upper left')
+    ax_mean_r.set_ylim([0, 1.0])
+    ax_mean_r.set_title("Recall of detections vs. tracker results")
+    ax_mean_r.set_ylabel("Recall")
+
+    plt.show()
+
+def plot_fp_fn_counts(det_hist, trk_hist=None, max_range=None):
+    """
+
+    Parameters
+    ----------
+    det_hist: DetectionsHistogram
+    trk_hist: DetectionsHistogram
+    max_range
+
+    """
+    # Determine which bins to plot based on the max range
+    if max_range is None:
+        max_range = det_hist.bin_max_range
+    bins = [b for b in det_hist.bin_ranges if b < max_range]
+    n_bins = len(bins)
+
+    # Plot means
+    fig, axs = plt.subplots(3,1)
+    fig.tight_layout()
+
+    ax_all = [ax_mean_p, ax_mean_r]
+    ylabels = ["Matches", "False positives", "False negatives"]
+    titles = ["Number of detected trees vs. range", "Number of false positives vs. range",
+              "Number of false negatives vs. range"]
+    for i in range(3):
+        # ax 0: count of matched detections
+        # ax 1: count of false positivesj
+        # ax 2: count of false negatives
+        ax = axs[i]
+        ax.set_xlabel("Range from camera [m]")
+        ax.set_xticks(bins)
+        ax.set_ylabel(ylabels[i])
+        ax.set_title(titles[i])
+
+
+    det_p = np.zeros(n_bins)
+    for i in range(n_bins):
+        matched = det_hist.matched_detections_count[i]
+        fp = det_hist.false_positives_count[i]
+        if matched + fp == 0:
+            det_p[i] = 0
+        else:
+            det_p[i] = matched / (matched + fp)
+    det_p = det_p[0:n_bins]
+    det_r = det_hist.matched_detections_count / (det_hist.matched_detections_count + det_hist.false_negatives_count)
+    det_r = det_r[0:n_bins]
+
+    ax_mean_p.bar(bins, det_p, width=1.0, label="Raw detections")
+    ax_mean_p.legend(loc='upper left')
+    ax_mean_p.set_ylim([0, 1.0])
+    ax_mean_p.set_title("Precision of detections vs. tracker results")
+    ax_mean_p.set_ylabel("Precision")
+
+    ax_mean_r.bar(bins, det_r, width=1.0, label="Raw detections")
+    ax_mean_r.legend(loc='upper left')
+    ax_mean_r.set_ylim([0, 1.0])
+    ax_mean_r.set_title("Recall of detections vs. tracker results")
+    ax_mean_r.set_ylabel("Recall")
+
+
+    for i in range(3):
+        ax = axs[i]
+
+    plt.show()
+
 
 def get_bin_index(bbox, hist_bin_size):
     r = bbox.range
     return int(np.floor(r / hist_bin_size))
+
+
 
 
 

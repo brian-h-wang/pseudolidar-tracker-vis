@@ -152,6 +152,67 @@ class TrackerBoundingBox(object):
     def size(self):
         return self.width
 
+class TrackerBoundingBoxWithVariance(TrackerBoundingBox):
+
+    def __init__(self, x, y, z, h, w, l, rotation_y, track_id, var_x, var_z, var_size):
+        """
+
+        Parameters
+        ----------
+        x: float
+        y: float
+        z: float
+        h: float
+        w: float
+        l: float
+        """
+        super().__init__(x, y, z, h, w, l, rotation_y, track_id)
+        self.var_x = var_x
+        self.var_z = var_z
+        self.var_size = var_size
+
+
+    @staticmethod
+    def from_kitti(kitti_str, var_str):
+        """
+        Create a TrackerBoundingBox from KITTI format data.
+
+        Parameters
+        ----------
+        kitti_str: str
+            Object information, including 3D bounding box,
+            in KITTI object detection format.
+
+        Returns
+        -------
+        TrackerBoundingBox
+
+        """
+        split = kitti_str.split(' ')
+        frame = int(split[0])
+        track_id = int(split[1])
+        # object_type = split[2]
+        # indices 3,4,5,6,7,8 are 'truncated', 'occluded', and the four 2D bounding box coords
+        h = float(split[10])
+        w = float(split[11])
+        l = float(split[12])
+        x = float(split[13])
+        y = float(split[14])
+        z = float(split[15])
+        # Ignore rotation_y - will be approx. zero for all bboxes
+        rotation_y = float(split[5])
+
+        var_split = var_str.split(' ')
+        var_frame = int(var_split[0])
+        var_track_id = int(var_split[1])
+        assert var_frame == frame, "Error: Line of variances file does not match trk file."
+        assert var_track_id == track_id, "Error: Line of variances file does not match trk file."
+        var_x = float(var_split[2])
+        var_z = float(var_split[3])
+        var_size = float(var_split[4])
+        return frame, TrackerBoundingBoxWithVariance(x=x, y=y, z=z, h=h, w=w, l=l, rotation_y=rotation_y, track_id=track_id,
+                                                     var_x=var_x, var_z=var_z, var_size=var_size)
+
 
 class TrackerResults(object):
 
@@ -278,3 +339,57 @@ class TrackerResults(object):
 
         return results
 
+    @staticmethod
+    def load_with_variance(trk_path, var_path, box_color=None):
+        """
+        Loads a tracking results file and a tracker estimate variances file,
+        and creates a TrackingResults object,
+        which can be used for accessing the tracker data.
+
+        The lines of the input file should contain, in order:
+        (Descriptions adapted from KITTI tracking devkit readme)
+
+        #Values    Name      Description
+        ----------------------------------------------------------------------------
+           1    frame        Frame within the sequence where the object appearers
+           1    track id     Unique tracking id of this object within this sequence
+           1    type         Describes the type of object: 'Car', 'Van', 'Truck',
+                             'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram',
+                             'Misc' or 'DontCare'
+           1    truncated    Integer (0,1,2) indicating the level of truncation.
+                             Note that this is in contrast to the object detection
+                             benchmark where truncation is a float in [0,1].
+           1    occluded     Integer (0,1,2,3) indicating occlusion state:
+                             0 = fully visible, 1 = partly occluded
+                             2 = largely occluded, 3 = unknown
+           1    alpha        Observation angle of object, ranging [-pi..pi]
+           4    bbox         2D bounding box of object in the image (0-based index):
+                             contains left, top, right, bottom pixel coordinates
+           3    dimensions   3D object dimensions: height, width, length (in meters)
+           3    location     3D object location x,y,z in camera coordinates (in meters)
+           1    rotation_y   Rotation ry around Y-axis in camera coordinates [-pi..pi]
+           1    score        Only for results: Float, indicating confidence in
+                             detection, needed for p/r curves, higher is better.
+
+
+        Variance file is:
+        frame   track_id     var_x     var_z      var_size (width)
+
+
+        Parameters
+        ----------
+        data_path
+
+        Returns
+        -------
+
+        """
+        results = TrackerResults(box_color=box_color)
+        with open(trk_path, 'r') as data_file:
+            lines_trk = [l.rstrip() for l in data_file.readlines()]
+        with open(var_path, 'r') as data_file:
+            lines_var = [l.rstrip() for l in data_file.readlines()]
+        for l_trk, l_var in zip(lines_trk, lines_var):
+            frame, bbox = TrackerBoundingBoxWithVariance.from_kitti(l_trk, l_var)
+            results.add(frame, bbox)
+        return results
