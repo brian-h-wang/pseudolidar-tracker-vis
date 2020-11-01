@@ -143,12 +143,6 @@ def plot_means_stddevs(det_hist, trk_hist=None, max_range=None, width=0.6):
     # Plot means
     fig, axs = plt.subplots(3,2)
     fig.tight_layout()
-    # ax_mean_x: plt.Axes = axs[0,0]
-    # ax_mean_z: plt.Axes = plt.subplot(3,2,3)
-    # ax_mean_size: plt.Axes = plt.subplot(3,2,5)
-    # ax_std_x: plt.Axes = plt.subplot(3,2,2)
-    # ax_std_z : plt.Axes= plt.subplot(3,2,4)
-    # ax_std_size : plt.Axes= plt.subplot(3,2,6)
     ax_mean_x: plt.Axes = axs[0,0]
     ax_mean_z: plt.Axes = axs[1,0]
     ax_mean_size: plt.Axes = axs[2,0]
@@ -166,6 +160,7 @@ def plot_means_stddevs(det_hist, trk_hist=None, max_range=None, width=0.6):
         ax.set_ylabel("Std. dev. of error [m]")
 
     # bins for detections and trk
+    # Resizes bar width depending on if we're plotting detections and tracker, or dets only
     bins = np.array(bins)
     if trk_hist is None:
         b_det = bins
@@ -175,42 +170,27 @@ def plot_means_stddevs(det_hist, trk_hist=None, max_range=None, width=0.6):
         b_det = bins - width/2
         b_trk = bins + width/2
 
-    ax_mean_x.bar(b_det, det_hist.x_means[:n_bins], width=width, label="Raw detections")
-    if not trk_hist is None:
-        ax_mean_x.bar(b_trk, trk_hist.x_means[:n_bins], width=width, label="Tracker results")
-    ax_mean_x.legend(loc='upper left')
-    ax_mean_x.set_ylim([0, 0.6])
-    ax_mean_x.set_title("Mean error of x-position")
-    ax_mean_z.bar(b_det, det_hist.z_means[:n_bins], width=width, label="Raw detections")
-    if not trk_hist is None:
-        ax_mean_z.bar(b_trk, trk_hist.z_means[:n_bins], width=width, label="Tracker results")
-    ax_mean_z.legend(loc='upper left')
-    ax_mean_z.set_title("Mean error of y-position")
-    ax_mean_z.set_ylim([0, 0.6])
-    ax_mean_size.bar(b_det, det_hist.size_means[:n_bins], width=width, label="Raw detections")
-    if not trk_hist is None:
-        ax_mean_size.bar(b_trk, trk_hist.size_means[:n_bins], width=width, label="Tracker results")
-    ax_mean_size.legend(loc='upper left')
-    ax_mean_size.set_title("Mean absolute error of tree size")
+    axs = [ax_mean_x, ax_mean_z, ax_mean_size, ax_std_x, ax_std_z, ax_std_size]
+    det_data = [det_hist.x_means, det_hist.z_means, det_hist.size_means,
+                det_hist.x_stddevs, det_hist.z_stddevs, det_hist.size_stddevs]
+    trk_data = [trk_hist.x_means, trk_hist.z_means, trk_hist.size_means,
+                trk_hist.x_stddevs, trk_hist.z_stddevs, trk_hist.size_stddevs]
 
-    ax_std_x.bar(b_det, det_hist.x_stddevs[:n_bins], width=width, label="Raw detections")
-    if not trk_hist is None:
-        ax_std_x.bar(b_trk, trk_hist.x_stddevs[:n_bins], width=width, label="Tracker results")
-    ax_std_x.legend(loc='upper left')
-    ax_std_x.set_ylim([0, 0.2])
-    ax_std_x.set_title("Standard deviation of x-position error")
-    ax_std_z.bar(b_det, det_hist.z_stddevs[:n_bins], width=width, label="Raw detections")
-    if not trk_hist is None:
-        ax_std_z.bar(b_trk, trk_hist.z_stddevs[:n_bins], width=width, label="Tracker results")
-    ax_std_z.legend(loc='upper left')
-    ax_std_z.set_ylim([0, 0.2])
-    ax_std_z.set_title("Standard deviation of y-position error")
-    ax_std_size.bar(b_det, det_hist.size_stddevs[:n_bins], width=width, label="Raw detections")
-    if not trk_hist is None:
-        ax_std_size.bar(b_trk, trk_hist.size_stddevs[:n_bins], width=width, label="Tracker results")
-    ax_std_size.legend(loc='upper left')
-    ax_std_size.set_ylim([0, 0.2])
-    ax_std_size.set_title("Standard deviation of tree size error")
+    variables = ["x-position", "y_position", "tree size"]
+    titles = ["Mean error of %s" % v for v in variables] + \
+        ["Standard deviation of %s error" % v for v in variables]
+
+    for i in range(6):
+        ax = axs[i]
+        det = det_data[i][:n_bins]
+        trk = trk_data[i][:n_bins]
+
+        ax.bar(b_det, det, width=width, label="Raw detections")
+        if not trk_hist is None:
+            ax.bar(b_trk, trk, width=width, label="Tracker results")
+        ax.legend(loc='upper left')
+        ax.set_ylim([0, 0.6])
+        ax_mean_x.set_title(titles[i])
 
     plt.show()
 
