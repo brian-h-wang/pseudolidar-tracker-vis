@@ -6,6 +6,8 @@ if __name__ == "__main__":
     gt = TrackerResults.load("data/tracking_gt_updated.txt")
     trk = TrackerResults.load("data/trk_highest_R.txt")
 
+    trk_var = TrackerResults.load_with_variance("data/trk_highest_R.txt", "data/variances.txt")
+
     hist = DetectionsHistogram(det, gt, assoc_threshold=1.0)
     hist_trk = DetectionsHistogram(trk, gt, assoc_threshold=1.0)
     print("FP")
