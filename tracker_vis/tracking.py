@@ -229,7 +229,7 @@ class TrackerResults(object):
 
     def add(self, time_step, tracker_bbox):
         assert type(time_step) == int, "Must give an int time step as input"
-        assert type(tracker_bbox) == TrackerBoundingBox, "TrackerResults.add takes in a TrackerBoundingBox input"
+        assert isinstance(tracker_bbox, TrackerBoundingBox), "TrackerResults.add takes in a TrackerBoundingBox input"
         if tracker_bbox.track_id not in self.colors.keys():
             if self.box_color is None:
                 new_color = list(np.random.random(3) * 0.7 + 0.2)
