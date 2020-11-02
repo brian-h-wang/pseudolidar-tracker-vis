@@ -105,7 +105,7 @@ class TrackingVisualizer(object):
             self.update_vis()
 
 
-    def visualize_frame(self, frame):
+    def visualize_frame(self, frame, block=False):
         use_line_mesh = True
         # Load points as a numpy array
         points = np.fromfile(self.pointcloud_path / ("%06d.bin" % frame), dtype=np.float32)
@@ -165,6 +165,8 @@ class TrackingVisualizer(object):
         # self.pcd.colors = o3d.utility.Vector3dVector(colors)
 
         self.vis.update_geometry(self.pcd)
+        if block:
+            self.vis.run()
 
     def plot_ranges(self):
         if len(self.box_ranges) == 0:

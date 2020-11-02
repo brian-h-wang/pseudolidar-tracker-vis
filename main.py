@@ -16,7 +16,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     vis = TrackingVisualizer(results_path=args.results_path, gt_path=args.gt_path, detections_path=args.det_path,
-                             pointcloud_path=args.pcd_dir, image_path=args.image_path, fps=60,
+                             pointcloud_path=args.pcd_dir, image_path=args.image_path, fps=180,
                              n_skip=args.n_skip, show_ax=args.ax, frame=args.frame)
     try:
         vis.visualize_all()
