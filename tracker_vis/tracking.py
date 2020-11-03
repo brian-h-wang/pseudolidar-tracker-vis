@@ -232,7 +232,8 @@ class TrackerResults(object):
         assert isinstance(tracker_bbox, TrackerBoundingBox), "TrackerResults.add takes in a TrackerBoundingBox input"
         if tracker_bbox.track_id not in self.colors.keys():
             if self.box_color is None:
-                new_color = list(np.random.random(3) * 0.7 + 0.2)
+                # new_color = list(np.random.random(3) * 0.7 + 0.2)
+                new_color = list(np.random.random(3))
                 self.colors[tracker_bbox.track_id] = new_color
             else:
                 self.colors[tracker_bbox.track_id] = self.box_color
