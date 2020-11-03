@@ -49,7 +49,7 @@ size_data_baseline = data_baseline[2][1:9]
 
 fig = plt.figure()
 
-ax = fig.add_subplot(111)
+ax = fig.add_subplot(311)
 
 bp3 = draw_plot_offset(y_data_baseline, -0.25, "black", u'#2ca02c')
 bp1 = draw_plot_offset(y_data_detector, -0.0, "black", u'#1f77b4')
@@ -67,13 +67,14 @@ ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
 
 #ax.legend([bp3["boxes"][0], bp1["boxes"][0], bp2["boxes"][0]], ['DBSCAN clustering', 'Raw detections', 'Tracker estimate means'], loc='upper center')
 
-plt.plot()
+#plt.plot()
 #plt.show()
 # Save the figure
-fig.savefig('y_error.png', bbox_inches='tight')
+#fig.savefig('y_error.png', bbox_inches='tight')
 
-plt.cla()
+# plt.cla()
 
+ax = fig.add_subplot(312)
 
 bp3 = draw_plot_offset(x_data_baseline, -0.25, "black", u'#2ca02c')
 bp1 = draw_plot_offset(x_data_detector, -0.0, "black", u'#1f77b4')
@@ -89,13 +90,14 @@ ax.set_ylabel('Absolute error X [m]', fontsize=15)
 ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
 
 #ax.legend([bp1["boxes"][0], bp2["boxes"][0]], ['Raw detections', 'tracker'], loc='upper center')
-plt.plot()
+# plt.plot()
 #plt.show()
 # Save the figure
-fig.savefig('x_error.png', bbox_inches='tight')
+# fig.savefig('x_error.png', bbox_inches='tight')
 
-plt.cla()
+# plt.cla()
 
+ax = fig.add_subplot(313)
 bp3 = draw_plot_offset(size_data_baseline, -0.25, "black", u'#2ca02c')
 bp1 = draw_plot_offset(size_data_detector, -0.0, "black", u'#1f77b4')
 bp2 = draw_plot_offset(size_data_tracker, +0.25, "black", u'#ff7f0e')
@@ -109,10 +111,14 @@ ax.set_ylim(0, 1.4)
 ax.set_ylabel('Absolute error diameter [m]', fontsize=15)
 ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
 
+#plt.figlegend([bp3, bp1, bp2], ["DBSCAN clustering", "Raw detections", "Tracker estimate means"], loc=8, ncol=3)
+
 #ax.legend([bp1["boxes"][0], bp2["boxes"][0]], ['Raw detections', 'tracker'], loc='upper center')
 plt.plot()
 #plt.show()
 # Save the figure
-fig.savefig('diameter_error.png', bbox_inches='tight')
+plt.show()
+#fig.savefig('diameter_error.png', bbox_inches='tight')
 
-plt.cla()
+# plt.cla()
+
