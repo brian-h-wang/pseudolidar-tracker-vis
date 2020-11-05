@@ -49,7 +49,7 @@ size_data_baseline = data_baseline[2][1:9]
 
 fig = plt.figure()
 
-ax = fig.add_subplot(311)
+ax = fig.add_subplot(131)
 
 bp3 = draw_plot_offset(y_data_baseline, -0.25, "black", u'#2ca02c')
 bp1 = draw_plot_offset(y_data_detector, -0.0, "black", u'#1f77b4')
@@ -65,7 +65,7 @@ ax.set_ylim(0, 1.4)
 ax.set_ylabel('Absolute error Y [m]', fontsize=15)
 ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
 
-#ax.legend([bp3["boxes"][0], bp1["boxes"][0], bp2["boxes"][0]], ['DBSCAN clustering', 'Raw detections', 'Tracker estimate means'], loc='upper center')
+ax.legend([bp3["boxes"][0], bp1["boxes"][0], bp2["boxes"][0]], ['DBSCAN clustering', 'Raw detections', 'Tracker estimate means'], loc='upper center')
 
 #plt.plot()
 #plt.show()
@@ -74,7 +74,7 @@ ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
 
 # plt.cla()
 
-ax = fig.add_subplot(312)
+ax = fig.add_subplot(132)
 
 bp3 = draw_plot_offset(x_data_baseline, -0.25, "black", u'#2ca02c')
 bp1 = draw_plot_offset(x_data_detector, -0.0, "black", u'#1f77b4')
@@ -97,7 +97,7 @@ ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
 
 # plt.cla()
 
-ax = fig.add_subplot(313)
+ax = fig.add_subplot(133)
 bp3 = draw_plot_offset(size_data_baseline, -0.25, "black", u'#2ca02c')
 bp1 = draw_plot_offset(size_data_detector, -0.0, "black", u'#1f77b4')
 bp2 = draw_plot_offset(size_data_tracker, +0.25, "black", u'#ff7f0e')

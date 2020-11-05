@@ -4,7 +4,6 @@ from pathlib import Path
 import open3d as o3d
 import os
 import time
-import matplotlib.pyplot as plt
 from skimage.viewer import ImageViewer
 from skimage.io import imread, imshow, imread_collection
 import matplotlib.pyplot as plt
@@ -12,6 +11,7 @@ import matplotlib.pyplot as plt
 GT_BOX_COLOR = [0.4, 0.95, 0.3] # bright green
 # DET_COLOR = [0.95, 0.3, 0.3] # bright red
 DET_COLOR = [0.90, 0.05, 1.0] # purple
+
 
 def cam_to_velo_frame(velo_points):
     R = np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
@@ -30,7 +30,11 @@ class TrackingVisualizer(object):
             self.ground_truth = TrackerResults.load(Path(gt_path), box_color=GT_BOX_COLOR)
         self.pointcloud_path = Path(pointcloud_path)
         self.vis = o3d.visualization.Visualizer()
-        self.vis.create_window(height=720, width=960)
+        if image_path is not None:
+            # smaller window if visualizing images too
+            self.vis.create_window(height=720, width=960)
+        else:
+            self.vis.create_window(height=720, width=1280)
         self.pcd = o3d.geometry.PointCloud()
 
         self.show_images = image_path is not None
@@ -70,7 +74,7 @@ class TrackingVisualizer(object):
         vc.set_up(np.array([0, -1, 1]))
         vc.set_front(np.array([0, -0.5, -1]))
         vc.set_lookat([0, 0, 5])
-        vc.set_zoom(0.1)
+        vc.set_zoom(0.3)
 
         # For making scatter plot of bounding box ranges
         self.box_ranges = []
@@ -78,7 +82,7 @@ class TrackingVisualizer(object):
         self.single_frame = frame
 
 
-    def visualize_all(self):
+    def visualize_all(self, max_frame=None, capture_images=False):
         if self.single_frame:
             self.visualize_frame(self.single_frame)
             self.vis.run()
@@ -99,9 +103,11 @@ class TrackingVisualizer(object):
                 print("[Frame %d]" % (frame))
                 self.visualize_frame(frame)
                 frame += self.n_skip
-                if frame >= n_frames:
+                if frame >= n_frames or (max_frame is not None and frame >= max_frame):
                     break
                 t_prev_frame = t
+                if capture_images:
+                    self.vis.capture_screen_image('capture/frame%06d.jpeg' % frame)
             self.update_vis()
 
 
@@ -146,11 +152,11 @@ class TrackingVisualizer(object):
                 # in_box = bbox.get_point_indices_within_bounding_box(self.pcd.points)
                 # colors[in_box,:] = bbox.color
             else:
-                points = np.asarray(bbox.get_box_points())
+                box_points = np.asarray(bbox.get_box_points())
                 color = bbox.color
                 # l = [[0,1],[0,2],[0,3],[3,6],[1,6],[3,5],[2,5],[4,5],[4,6],[1,7],[2,7],[4,7]]
-                l = [[0,1],[0,2],[0,3],[1,7],[1,6],[3,6],[3,5],[2,5],[4,5],[4,7],[2,7],[4,6]]
-                lines = LineMesh(points, colors=color, lines=l, radius=0.03)
+                l = [[0,1],[0,2],[0,3],[1,7],[1,6],[3,6],[3,5],[5,2],[4,5],[4,7],[2,7],[4,6], [2,5], [7,4]]
+                lines = LineMesh(box_points, colors=color, lines=l, radius=0.03)
                 lines.add_line(self.vis)
                 line_meshes.append(lines)
         if not use_line_mesh:
@@ -209,7 +215,9 @@ def align_vector_to_another(a=np.array([0, 0, 1]), b=np.array([1, 0, 0])):
     if np.array_equal(a, b):
         return None, None
     axis_ = np.cross(a, b)
-    axis_ = axis_ / np.linalg.norm(axis_)
+    n = np.linalg.norm(axis_)
+    if n != 0:
+        axis_ = axis_ / n
     angle = np.arccos(np.dot(a, b))
 
     return axis_, angle
@@ -247,6 +255,7 @@ class LineMesh(object):
     def create_from_bounding_box(bbox):
         points = np.asarray(bbox.get_box_points())
         color = bbox.color
+        print(points)
         # l = [[0,1],[0,2],[0,3],[3,6],[1,6],[3,5],[2,5],[4,5],[4,6],[1,7],[2,7],[4,7]]
         l = [[0, 1], [0, 2], [0, 3], [1, 7], [1, 6], [3, 6], [3, 5], [2, 5], [4, 5], [4, 7], [2, 7], [4, 6]]
         return LineMesh(points, colors=color, lines=l, radius=0.03)

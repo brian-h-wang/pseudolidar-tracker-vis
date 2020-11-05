@@ -3,6 +3,10 @@ import open3d as o3d
 import os
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+colormap = plt.cm.tab10
+
+ncolors = colormap.N
 HEIGHT=3
 
 class TrackerBoundingBox(object):
@@ -216,6 +220,8 @@ class TrackerBoundingBoxWithVariance(TrackerBoundingBox):
 
 class TrackerResults(object):
 
+    next_color = 0
+
     def __init__(self, box_color=None):
         self._results = {}
         self.colors = {}
@@ -233,8 +239,10 @@ class TrackerResults(object):
         if tracker_bbox.track_id not in self.colors.keys():
             if self.box_color is None:
                 # new_color = list(np.random.random(3) * 0.7 + 0.2)
-                new_color = list(np.random.random(3))
-                self.colors[tracker_bbox.track_id] = new_color
+                # new_color = list(np.random.random(3))
+                new_color = colormap(self.next_color % ncolors)
+                self.next_color += 1
+                self.colors[tracker_bbox.track_id] = [new_color[0], new_color[1], new_color[2]]
             else:
                 self.colors[tracker_bbox.track_id] = self.box_color
         tracker_bbox.color = self.colors[tracker_bbox.track_id]

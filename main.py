@@ -19,7 +19,7 @@ if __name__ == "__main__":
                              pointcloud_path=args.pcd_dir, image_path=args.image_path, fps=180,
                              n_skip=args.n_skip, show_ax=args.ax, frame=args.frame)
     try:
-        vis.visualize_all()
+        vis.visualize_all(max_frame=2000, capture_images=True)
     finally:
         # If plotting detections, show detection box ranges:
         vis.plot_ranges()
